@@ -90,13 +90,13 @@ def get_distance(H,t):
     points = get_pose_point_noroate(H)
     return average_dis(points,t)
 def get_min_distance(array_detections,t):
-    min = 65535;
+    min = 65535
     for detection in array_detections:
         #print(detection.id)
         dis = get_distance(detection.homography,t)
         if dis < min:
             min = dis
-    return min;
+    return min
 
 def get_pixel(H):
     points = get_pose_point_noroate(H)
