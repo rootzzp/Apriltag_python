@@ -26,18 +26,20 @@ campoint = np.array([[314, 93],
                      [381, 143]],dtype=np.float64)
 
 rate, rvec, tvec = cv2.solvePnP(opoints, campoint, Kmat, disCoeffs)
-print(rvec)
-print(tvec)
+print("rvec",rvec)
+print("tvec",tvec)
 filename = './TY0913/-5.png'
 frame = cv2.imread(filename)
 
-point, jac = cv2.projectPoints(opoints, rvec, tvec, Kmat, disCoeffs)
-point = np.int32(np.reshape(point,[5,2]))
-print(point[4])
-a = tuple(point[0])
-cv2.line(frame,tuple(point[4]),tuple(point[0]),(255,0,0),1)
-cv2.line(frame,tuple(point[4]),tuple(point[1]),(0,255,0),1)
-cv2.line(frame,tuple(point[4]),tuple(point[2]),(0,0,255),1)
+center = np.array([[0, 0, 0.0],[0, 0, -2],[1,0,0],[0,1,0]],dtype=np.float64) * half_tagsize
+
+point, jac = cv2.projectPoints(center, rvec, tvec, Kmat, disCoeffs)
+point = np.int32(np.reshape(point,[4,2]))
+cv2.line(frame,tuple(point[0]),tuple(point[1]),(0,0,255),2)
+cv2.line(frame,tuple(point[0]),tuple(point[2]),(0,255,0),2)
+cv2.line(frame,tuple(point[0]),tuple(point[3]),(255,0,0),2)
+# cv2.line(frame,tuple(point[4]),tuple(point[1]),(0,255,0),1)
+# cv2.line(frame,tuple(point[4]),tuple(point[2]),(0,0,255),1)
 # cv2.imshow("show",frame)
 # cv2.waitKey(0)
 cv2.imwrite("dst.png",frame)
