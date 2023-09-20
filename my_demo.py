@@ -118,9 +118,9 @@ if __name__ == "__main__":
         list2.append("file {} rx {} ry {} rz {} tx {} ty {} tz {}".
                format(img_file,roll,pitch,yaw,tvec_t[0],tvec_t[1],tvec_t[2]))
 
-print("相机相对标签")
+print("相机相对标签(旋转矩阵和平移矩阵是将标签坐标转换到相机坐标)")
 for a in list1:
     print(a)
-print("标签相对相机")
+print("标签相对相机(旋转矩阵和平移矩阵是将相机系下的坐标转换到标签坐标)")
 for a in list2:
     print(a)
