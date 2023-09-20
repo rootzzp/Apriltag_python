@@ -36,69 +36,74 @@ def rotationMatrixToEulerAngles(R) :
 
 if __name__ == "__main__":
     fold = "./TY0913"
-    img_file = "-5.png"
-    file_name = img_file.split('.')[0]
-    img_path = os.path.join(fold,img_file)
-    coord_path = os.path.join(fold,"coord_"+file_name+".txt")
-    print("file:{}".format(img_file))
+    file_list = ["-10.png","-5.png","0.png","1.png","2.png","3.png","4.png",
+                 "5.png","6.png","10.png"]
+    for img_file in file_list:
+        # img_file = "-5.png"
+        file_name = img_file.split('.')[0]
+        img_path = os.path.join(fold,img_file)
+        coord_path = os.path.join(fold,"coord_"+file_name+".txt")
+        #print("file:{}".format(img_file))
 
-    tagsize = 0.0625
-    fx = 591.797  
-    fy = 591.829  
-    cx = 373.161
-    cy = 203.246
-    half_tagsize = tagsize / 2.0
+        tagsize = 0.0625
+        fx = 591.797  
+        fy = 591.829  
+        cx = 373.161
+        cy = 203.246
+        half_tagsize = tagsize / 2.0
 
-    Kmat = np.array([[fx, 0, cx],
-                     [0, fy, cy],
-                     [0, 0,  1 ]],dtype=np.float64)
-    disCoeffs= np.zeros([4, 1],dtype=np.float64) * 1.0
+        Kmat = np.array([[fx, 0, cx],
+                        [0, fy, cy],
+                        [0, 0,  1 ]],dtype=np.float64)
+        disCoeffs= np.zeros([4, 1],dtype=np.float64) * 1.0
 
-    opoints = np.array([[-1.0, -1.0, 0.0],
-                        [1.0, -1.0, 0.0],
-                        [1.0, 1.0, 0.0],
-                        [-1.0, 1.0, 0.0],
-                        [0, 0, 0.0]],dtype=np.float64) * half_tagsize
-    campoint = []
-    content = open(coord_path)
-    for line in content:
-        x,y = line.split(',')
-        x = x.strip()
-        y = y.strip()
-        x = float(x)
-        y = float(y)
-        campoint.append([x,y])
-    campoint = np.array(campoint,dtype=np.float64)
+        opoints = np.array([[-1.0, -1.0, 0.0],
+                            [1.0, -1.0, 0.0],
+                            [1.0, 1.0, 0.0],
+                            [-1.0, 1.0, 0.0],
+                            [0, 0, 0.0]],dtype=np.float64) * half_tagsize
+        campoint = []
+        content = open(coord_path)
+        for line in content:
+            x,y = line.split(',')
+            x = x.strip()
+            y = y.strip()
+            x = float(x)
+            y = float(y)
+            campoint.append([x,y])
+        campoint = np.array(campoint,dtype=np.float64)
 
-    rate, rvec, tvec = cv2.solvePnP(opoints, campoint, Kmat, disCoeffs)
-    print("rvec={}".format(rvec))
-    print("tvec={}".format(tvec))
-    rotate_m,_ = cv2.Rodrigues(rvec) # world to cam; x_cm = R * x_w + t; x_pixel = Kmat * x_cm
-    print("R={}".format(rotate_m))
-    yaw,pitch,roll = rotationMatrixToEulerAngles(rotate_m)
-    print("相机相对标签的欧拉角 yaw {} pitch {} roll {}".format(yaw,pitch,roll))
+        rate, rvec, tvec = cv2.solvePnP(opoints, campoint, Kmat, disCoeffs)
+        #print("rvec={}".format(rvec))
+        #print("tvec={}".format(tvec))
+        rotate_m,_ = cv2.Rodrigues(rvec) # world to cam; x_cm = R * x_w + t; x_pixel = Kmat * x_cm
+        #print("R={}".format(rotate_m))
+        yaw,pitch,roll = rotationMatrixToEulerAngles(rotate_m)
+        #print("相机相对标签的欧拉角 yaw {} pitch {} roll {}".format(yaw,pitch,roll))
 
-    inv = np.linalg.inv(rotate_m)
+        inv = np.linalg.inv(rotate_m)
 
-    R_c = inv # 相机坐标系到世界坐标系的转换
-    T_c = -R_c @ tvec
-    rvec_t = cv2.Rodrigues(R_c)[0]
-    tvec_t = T_c
-    print("rvec_t={}".format(rvec_t))
-    print("tvec_t={}".format(tvec_t))
-    yaw,pitch,roll = rotationMatrixToEulerAngles(R_c)
-    print("标签相对相机的欧拉角 yaw {} pitch {} roll {}".format(yaw,pitch,roll))
+        R_c = inv # 相机坐标系到世界坐标系的转换
+        T_c = -R_c @ tvec
+        rvec_t = cv2.Rodrigues(R_c)[0]
+        tvec_t = T_c
+        #print("rvec_t={}".format(rvec_t))
+        #print("tvec_t={}".format(tvec_t))
+        # yaw,pitch,roll = rotationMatrixToEulerAngles(R_c)
+        #print("标签相对相机的欧拉角 yaw {} pitch {} roll {}".format(yaw,pitch,roll))
 
-    dis  =math.sqrt(tvec[0]**2 + tvec[1]**2 + tvec[2]**2)
-    print("distance={} m".format(dis))
-    
-    frame = cv2.imread(img_path)
+        dis  =math.sqrt(tvec[0]**2 + tvec[1]**2 + tvec[2]**2)
+        #print("distance={} m".format(dis))
+        
+        frame = cv2.imread(img_path)
 
-    center = np.array([[0, 0, 0.0],[0, 0, -2],[1,0,0],[0,1,0]],dtype=np.float64) * half_tagsize
+        center = np.array([[0, 0, 0.0],[0, 0, -2],[1,0,0],[0,1,0]],dtype=np.float64) * half_tagsize
 
-    point, jac = cv2.projectPoints(center, rvec, tvec, Kmat, disCoeffs)
-    point = np.int32(np.reshape(point,[4,2]))
-    cv2.line(frame,tuple(point[0]),tuple(point[1]),(0,0,255),2)
-    cv2.line(frame,tuple(point[0]),tuple(point[2]),(0,255,0),2)
-    cv2.line(frame,tuple(point[0]),tuple(point[3]),(255,0,0),2)
-    cv2.imwrite(os.path.join(fold,file_name+"_res.png"),frame)
+        point, jac = cv2.projectPoints(center, rvec, tvec, Kmat, disCoeffs)
+        point = np.int32(np.reshape(point,[4,2]))
+        # cv2.line(frame,tuple(point[0]),tuple(point[1]),(0,0,255),2)
+        # cv2.line(frame,tuple(point[0]),tuple(point[2]),(0,255,0),2)
+        # cv2.line(frame,tuple(point[0]),tuple(point[3]),(255,0,0),2)
+        # cv2.imwrite(os.path.join(fold,file_name+"_res.png"),frame)
+        print("file {} rx {} ry {} rz {} tx {} ty {} tz {}".
+              format(img_file,roll,pitch,yaw,tvec_t[0],tvec_t[1],tvec_t[2]))
