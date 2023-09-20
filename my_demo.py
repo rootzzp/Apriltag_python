@@ -38,6 +38,8 @@ if __name__ == "__main__":
     fold = "./TY0913"
     file_list = ["-10.png","-5.png","0.png","1.png","2.png","3.png","4.png",
                  "5.png","6.png","10.png"]
+    list1 = []
+    list2 = []
     for img_file in file_list:
         # img_file = "-5.png"
         file_name = img_file.split('.')[0]
@@ -79,7 +81,12 @@ if __name__ == "__main__":
         rotate_m,_ = cv2.Rodrigues(rvec) # world to cam; x_cm = R * x_w + t; x_pixel = Kmat * x_cm
         #print("R={}".format(rotate_m))
         yaw,pitch,roll = rotationMatrixToEulerAngles(rotate_m)
-        #print("相机相对标签的欧拉角 yaw {} pitch {} roll {}".format(yaw,pitch,roll))
+        # print("相机相对标签的欧拉角 yaw {} pitch {} roll {}".format(yaw,pitch,roll))
+        # print("相机相对标签")
+        # print("file {} rx {} ry {} rz {} tx {} ty {} tz {}".
+        #       format(img_file,roll,pitch,yaw,tvec[0],tvec[1],tvec[2]))
+        list1.append("file {} rx {} ry {} rz {} tx {} ty {} tz {}".
+              format(img_file,roll,pitch,yaw,tvec[0],tvec[1],tvec[2]))
 
         inv = np.linalg.inv(rotate_m)
 
@@ -89,7 +96,7 @@ if __name__ == "__main__":
         tvec_t = T_c
         #print("rvec_t={}".format(rvec_t))
         #print("tvec_t={}".format(tvec_t))
-        # yaw,pitch,roll = rotationMatrixToEulerAngles(R_c)
+        yaw,pitch,roll = rotationMatrixToEulerAngles(R_c)
         #print("标签相对相机的欧拉角 yaw {} pitch {} roll {}".format(yaw,pitch,roll))
 
         dis  =math.sqrt(tvec[0]**2 + tvec[1]**2 + tvec[2]**2)
@@ -105,5 +112,15 @@ if __name__ == "__main__":
         # cv2.line(frame,tuple(point[0]),tuple(point[2]),(0,255,0),2)
         # cv2.line(frame,tuple(point[0]),tuple(point[3]),(255,0,0),2)
         # cv2.imwrite(os.path.join(fold,file_name+"_res.png"),frame)
-        print("file {} rx {} ry {} rz {} tx {} ty {} tz {}".
-              format(img_file,roll,pitch,yaw,tvec_t[0],tvec_t[1],tvec_t[2]))
+        # print("标签相对相机")
+        # print("file {} rx {} ry {} rz {} tx {} ty {} tz {}".
+        #       format(img_file,roll,pitch,yaw,tvec_t[0],tvec_t[1],tvec_t[2]))
+        list2.append("file {} rx {} ry {} rz {} tx {} ty {} tz {}".
+               format(img_file,roll,pitch,yaw,tvec_t[0],tvec_t[1],tvec_t[2]))
+
+print("相机相对标签")
+for a in list1:
+    print(a)
+print("标签相对相机")
+for a in list2:
+    print(a)
