@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import math
+import os
 
 def isRotationMatrix(R) :
     # 得到该矩阵的转置
@@ -33,48 +34,61 @@ def rotationMatrixToEulerAngles(R) :
 
     return np.array([math.degrees(z), math.degrees(y), math.degrees(x)])
 
-tagsize = 0.0625  
-fx = 591.797  
-fy = 591.829  
-cx = 373.161
-cy = 203.246
-half_tagsize = tagsize / 2.0
+if __name__ == "__main__":
+    fold = "./TY0913"
+    img_file = "30.png"
+    file_name = img_file.split('.')[0]
+    img_path = os.path.join(fold,img_file)
+    coord_path = os.path.join(fold,"coord_"+file_name+".txt")
 
-Kmat = np.array([[591.797, 0, 373.161],
-                     [0, 591.829, 203.246],
-                     [0, 0, 1]],dtype=np.float64)
-disCoeffs= np.zeros([4, 1],dtype=np.float64) * 1.0
 
-opoints = np.array([[-1.0, -1.0, 0.0],
-                    [1.0, -1.0, 0.0],
-                    [1.0, 1.0, 0.0],
-                    [-1.0, 1.0, 0.0],
-                    [0, 0, 0.0]],dtype=np.float64) * half_tagsize
+    tagsize = 0.0625  
+    fx = 591.797  
+    fy = 591.829  
+    cx = 373.161
+    cy = 203.246
+    half_tagsize = tagsize / 2.0
 
-campoint = np.array([[314, 93 ],
-                     [422, 79 ],
-                     [449, 186],
-                     [338, 207],
-                     [381, 143]],dtype=np.float64)
+    Kmat = np.array([[fx, 0, cx],
+                     [0, fy, cy],
+                     [0, 0,  1 ]],dtype=np.float64)
+    disCoeffs= np.zeros([4, 1],dtype=np.float64) * 1.0
 
-rate, rvec, tvec = cv2.solvePnP(opoints, campoint, Kmat, disCoeffs)
-print("rvec",rvec)
-print("tvec",tvec)
-rotate_m,_ = cv2.Rodrigues(rvec)
-print("R={}".format(rotate_m))
-yaw,pitch,roll = rotationMatrixToEulerAngles(rotate_m)
-print("yaw {} pitch {} roll {}".format(yaw,pitch,roll))
+    opoints = np.array([[-1.0, -1.0, 0.0],
+                        [1.0, -1.0, 0.0],
+                        [1.0, 1.0, 0.0],
+                        [-1.0, 1.0, 0.0],
+                        [0, 0, 0.0]],dtype=np.float64) * half_tagsize
+    campoint = []
+    content = open(coord_path)
+    for line in content:
+        x,y = line.split(',')
+        x = x.strip()
+        y = y.strip()
+        x = float(x)
+        y = float(y)
+        print(x,y)
+        campoint.append([x,y])
+    campoint = np.array(campoint,dtype=np.float64)
 
-dis  =math.sqrt(tvec[0]**2 + tvec[1]**2 + tvec[2]**2)
-print("distance={}".format(dis))
-filename = './TY0913/-5.png'
-frame = cv2.imread(filename)
+    rate, rvec, tvec = cv2.solvePnP(opoints, campoint, Kmat, disCoeffs)
+    print("rvec",rvec)
+    print("tvec",tvec)
+    rotate_m,_ = cv2.Rodrigues(rvec)
+    print("R={}".format(rotate_m))
+    yaw,pitch,roll = rotationMatrixToEulerAngles(rotate_m)
+    print("yaw {} pitch {} roll {}".format(yaw,pitch,roll))
 
-center = np.array([[0, 0, 0.0],[0, 0, -2],[1,0,0],[0,1,0]],dtype=np.float64) * half_tagsize
+    dis  =math.sqrt(tvec[0]**2 + tvec[1]**2 + tvec[2]**2)
+    print("distance={}".format(dis))
+    
+    frame = cv2.imread(img_path)
 
-point, jac = cv2.projectPoints(center, rvec, tvec, Kmat, disCoeffs)
-point = np.int32(np.reshape(point,[4,2]))
-cv2.line(frame,tuple(point[0]),tuple(point[1]),(0,0,255),2)
-cv2.line(frame,tuple(point[0]),tuple(point[2]),(0,255,0),2)
-cv2.line(frame,tuple(point[0]),tuple(point[3]),(255,0,0),2)
-cv2.imwrite("dst.png",frame)
+    center = np.array([[0, 0, 0.0],[0, 0, -2],[1,0,0],[0,1,0]],dtype=np.float64) * half_tagsize
+
+    point, jac = cv2.projectPoints(center, rvec, tvec, Kmat, disCoeffs)
+    point = np.int32(np.reshape(point,[4,2]))
+    cv2.line(frame,tuple(point[0]),tuple(point[1]),(0,0,255),2)
+    cv2.line(frame,tuple(point[0]),tuple(point[2]),(0,255,0),2)
+    cv2.line(frame,tuple(point[0]),tuple(point[3]),(255,0,0),2)
+    cv2.imwrite(os.path.join(fold,file_name+"_res.png"),frame)
