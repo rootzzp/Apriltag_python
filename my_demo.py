@@ -36,13 +36,13 @@ def rotationMatrixToEulerAngles(R) :
 
 if __name__ == "__main__":
     fold = "./TY0913"
-    img_file = "30.png"
+    img_file = "-5.png"
     file_name = img_file.split('.')[0]
     img_path = os.path.join(fold,img_file)
     coord_path = os.path.join(fold,"coord_"+file_name+".txt")
+    print("file:{}".format(img_file))
 
-
-    tagsize = 0.0625  
+    tagsize = 0.0625
     fx = 591.797  
     fy = 591.829  
     cx = 373.161
@@ -67,20 +67,30 @@ if __name__ == "__main__":
         y = y.strip()
         x = float(x)
         y = float(y)
-        print(x,y)
         campoint.append([x,y])
     campoint = np.array(campoint,dtype=np.float64)
 
     rate, rvec, tvec = cv2.solvePnP(opoints, campoint, Kmat, disCoeffs)
-    print("rvec",rvec)
-    print("tvec",tvec)
-    rotate_m,_ = cv2.Rodrigues(rvec)
+    print("rvec={}".format(rvec))
+    print("tvec={}".format(tvec))
+    rotate_m,_ = cv2.Rodrigues(rvec) # world to cam; x_cm = R * x_w + t; x_pixel = Kmat * x_cm
     print("R={}".format(rotate_m))
     yaw,pitch,roll = rotationMatrixToEulerAngles(rotate_m)
-    print("yaw {} pitch {} roll {}".format(yaw,pitch,roll))
+    print("相机相对标签的欧拉角 yaw {} pitch {} roll {}".format(yaw,pitch,roll))
+
+    inv = np.linalg.inv(rotate_m)
+
+    R_c = inv # 相机坐标系到世界坐标系的转换
+    T_c = -R_c @ tvec
+    rvec_t = cv2.Rodrigues(R_c)[0]
+    tvec_t = T_c
+    print("rvec_t={}".format(rvec_t))
+    print("tvec_t={}".format(tvec_t))
+    yaw,pitch,roll = rotationMatrixToEulerAngles(R_c)
+    print("标签相对相机的欧拉角 yaw {} pitch {} roll {}".format(yaw,pitch,roll))
 
     dis  =math.sqrt(tvec[0]**2 + tvec[1]**2 + tvec[2]**2)
-    print("distance={}".format(dis))
+    print("distance={} m".format(dis))
     
     frame = cv2.imread(img_path)
 
