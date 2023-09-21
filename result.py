@@ -38,18 +38,16 @@ if __name__ == "__main__":
     fold = "./TY0913"
     res_fold = "./result"
     file_list = ["-10.png","-5.png","0.png","1.png","2.png","3.png","4.png",
-                 "5.png","6.png","10.png"]
+                 "5.png","6.png","10.png", "15.png", "20.png", "25.png", "30.png",]
     list1 = []
     list2 = []
     for img_file in file_list:
-        # img_file = "-5.png"
         file_name = img_file.split('.')[0]
         img_path = os.path.join(fold,img_file)
         coord_path = os.path.join(fold,"coord_"+file_name+".txt")
-        #print("file:{}".format(img_file))
 
         # tagsize = 0.0625
-        tagsize = 62.5
+        tagsize = 62.5 # mm
         fx = 591.797  
         fy = 591.829  
         cx = 373.161
@@ -78,17 +76,11 @@ if __name__ == "__main__":
         campoint = np.array(campoint,dtype=np.float64)
 
         rate, rvec, tvec = cv2.solvePnP(opoints, campoint, Kmat, disCoeffs)
-        #print("rvec={}".format(rvec))
-        #print("tvec={}".format(tvec))
         rotate_m,_ = cv2.Rodrigues(rvec) # world to cam; x_cm = R * x_w + t; x_pixel = Kmat * x_cm
-        #print("R={}".format(rotate_m))
         yaw,pitch,roll = rotationMatrixToEulerAngles(rotate_m)
-        # print("相机相对标签的欧拉角 yaw {} pitch {} roll {}".format(yaw,pitch,roll))
-        # print("相机相对标签")
-        # print("file {} rx {} ry {} rz {} tx {} ty {} tz {}".
-        #       format(img_file,roll,pitch,yaw,tvec[0],tvec[1],tvec[2]))
-        list1.append("file {} rx {} ry {} rz {} tx {} ty {} tz {}".
-              format(img_file,roll,pitch,yaw,tvec[0],tvec[1],tvec[2]))
+
+        list1.append("tx {:.2f}mm, ty {:.2f}mm, tz {:.2f}mm".
+              format(tvec[0][0],tvec[1][0],tvec[2][0]))
 
         inv = np.linalg.inv(rotate_m)
 
@@ -96,33 +88,38 @@ if __name__ == "__main__":
         T_c = -R_c @ tvec
         rvec_t = cv2.Rodrigues(R_c)[0]
         tvec_t = T_c
-        #print("rvec_t={}".format(rvec_t))
-        #print("tvec_t={}".format(tvec_t))
         yaw,pitch,roll = rotationMatrixToEulerAngles(R_c)
-        #print("标签相对相机的欧拉角 yaw {} pitch {} roll {}".format(yaw,pitch,roll))
+        list2.append("file {} rx: {:.2f} degree, ry {:.2f} degree, rz {:.2f} degree, ".
+               format(img_file,roll,pitch,yaw))
 
         dis  =math.sqrt(tvec[0]**2 + tvec[1]**2 + tvec[2]**2)
-        #print("distance={} m".format(dis))
-        
+               
         frame = cv2.imread(img_path)
+        img_h, img_w, _ = frame.shape
+        img_center = (img_w // 2, img_h // 2)
 
         center = np.array([[0, 0, 0.0],[0, 0, 2],[1,0,0],[0,1,0]],dtype=np.float64) * half_tagsize
 
         point, jac = cv2.projectPoints(center, rvec, tvec, Kmat, disCoeffs)
         point = np.int32(np.reshape(point,[4,2]))
         cv2.line(frame,tuple(point[0]),tuple(point[1]),(0,0,255),2)
-        cv2.line(frame,tuple(point[0]),tuple(point[2]),(0,255,0),2)
-        cv2.line(frame,tuple(point[0]),tuple(point[3]),(255,0,0),2)
-        cv2.imwrite(os.path.join(res_fold,file_name+"_res.png"),frame)
-        # print("标签相对相机")
-        # print("file {} rx {} ry {} rz {} tx {} ty {} tz {}".
-        #       format(img_file,roll,pitch,yaw,tvec_t[0],tvec_t[1],tvec_t[2]))
-        list2.append("file {} rx {} ry {} rz {} tx {} ty {} tz {}".
-               format(img_file,roll,pitch,yaw,tvec_t[0],tvec_t[1],tvec_t[2]))
+        cv2.putText(frame,'z',tuple(point[1]),cv2.FONT_HERSHEY_COMPLEX,0.6,(0,0,255),1)
 
-print("相机相对标签(旋转矩阵和平移矩阵是将标签坐标转换到相机坐标)")
-for a in list1:
-    print(a)
-print("标签相对相机(旋转矩阵和平移矩阵是将相机系下的坐标转换到标签坐标)")
-for a in list2:
-    print(a)
+        cv2.line(frame,tuple(point[0]),tuple(point[2]),(0,255,0),2)
+        cv2.putText(frame,'x',tuple(point[2]),cv2.FONT_HERSHEY_COMPLEX,0.6,(0,255,0),1)
+
+        cv2.line(frame,tuple(point[0]),tuple(point[3]),(255,0,0),2)
+        cv2.putText(frame,'y',tuple(point[3]),cv2.FONT_HERSHEY_COMPLEX,0.6,(255,0,0),1)
+
+        cv2.line(frame,img_center,(img_w // 2 + 30, img_h // 2),(0,255,0),2)
+        cv2.putText(frame,'x',(img_w // 2 + 30, img_h // 2),cv2.FONT_HERSHEY_COMPLEX,0.6,(0,255,0),1)
+
+        cv2.line(frame,img_center,(img_w // 2, img_h // 2 + 30),(255,0,0),2)
+        cv2.putText(frame,'y',(img_w // 2, img_h // 2 + 30),cv2.FONT_HERSHEY_COMPLEX,0.6,(255,0,0),1)
+
+        cv2.imwrite(os.path.join(res_fold,file_name+"_res.png"),frame)
+
+        
+
+for a,b in zip(list2,list1):
+    print(a,b)
