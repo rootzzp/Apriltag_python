@@ -43,10 +43,11 @@ def calc_relative_angle(T1,T2):
     rvec,_ = cv2.Rodrigues(R)
     tmp = math.sqrt(rvec[0]**2+rvec[1]**2+rvec[2]**2)
     angle = math.degrees(tmp)
+    t = T[:3,3]
     # print(tmp)
     # theta = np.arccos((np.trace(R) - 1) / 2)
     # print(theta)
-    return angle
+    return angle,R,t
 
 if __name__ == "__main__":
     fold = "./TY0913"
@@ -149,5 +150,11 @@ for a,b in zip(list2,list1):
 size = len(T_list)
 for i in range(size):
     for j in range(size):
-        angle = calc_relative_angle(T_list[i],T_list[j])
+        angle,_,_ = calc_relative_angle(T_list[i],T_list[j])
         print("{} 相对 {} angle = {:.2f} degree".format(file_list[i],file_list[j],angle))
+
+for i in range(size):
+    for j in range(size):
+        _,R,t = calc_relative_angle(T_list[i],T_list[j])
+        yaw,pitch,roll = rotationMatrixToEulerAngles(R)
+        print("{} 相对 {} rx: {:.2f} degree, ry {:.2f} degree, rz {:.2f} degree, tx {:.2f}mm, ty {:.2f}mm, tz {:.2f}mm".format(file_list[i],file_list[j],roll, pitch, yaw, t[0],t[1],t[2]))
