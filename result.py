@@ -43,7 +43,7 @@ def calc_relative_angle(T1,T2):
     rvec,_ = cv2.Rodrigues(R)
     tmp = math.sqrt(rvec[0]**2+rvec[1]**2+rvec[2]**2)
     angle = math.degrees(tmp)
-    t = T[:3,3]
+    t = T1[:3,3] - T2[:3,3]
     # print(tmp)
     # theta = np.arccos((np.trace(R) - 1) / 2)
     # print(theta)
