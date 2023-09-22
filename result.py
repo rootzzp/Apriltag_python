@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import math
 import os
+import copy
 
 def isRotationMatrix(R) :
     # 得到该矩阵的转置
@@ -34,6 +35,19 @@ def rotationMatrixToEulerAngles(R) :
 
     return np.array([math.degrees(z), math.degrees(y), math.degrees(x)])
 
+def calc_relative_angle(T1,T2):
+    T = np.linalg.inv(T1) @ T2
+    # print(T)
+    # R = np.transpose(R_10) @ np.transpose(R_30)
+    R = T[:3,:3]
+    rvec,_ = cv2.Rodrigues(R)
+    tmp = math.sqrt(rvec[0]**2+rvec[1]**2+rvec[2]**2)
+    angle = math.degrees(tmp)
+    # print(tmp)
+    # theta = np.arccos((np.trace(R) - 1) / 2)
+    # print(theta)
+    return angle
+
 if __name__ == "__main__":
     fold = "./TY0913"
     res_fold = "./result"
@@ -41,6 +55,7 @@ if __name__ == "__main__":
                  "5.png","6.png","10.png", "15.png", "20.png", "25.png", "30.png",]
     list1 = []
     list2 = []
+    T_list = []
     for img_file in file_list:
         file_name = img_file.split('.')[0]
         img_path = os.path.join(fold,img_file)
@@ -63,10 +78,12 @@ if __name__ == "__main__":
                             [1.0, -1.0, 0.0],
                             [1.0, 1.0, 0.0],
                             [-1.0, 1.0, 0.0],
-                            [0, 0, 0.0]],dtype=np.float64) * half_tagsize
+                            ],dtype=np.float64) * half_tagsize
         campoint = []
         content = open(coord_path)
-        for line in content:
+        for i,line in enumerate(content):
+            if(i == 4):
+                break
             x,y = line.split(',')
             x = x.strip()
             y = y.strip()
@@ -75,9 +92,10 @@ if __name__ == "__main__":
             campoint.append([x,y])
         campoint = np.array(campoint,dtype=np.float64)
 
-        rate, rvec, tvec = cv2.solvePnP(opoints, campoint, Kmat, disCoeffs)
+        rate, rvec, tvec = cv2.solvePnP(opoints, campoint, Kmat, disCoeffs,cv2.SOLVEPNP_DLS)
         rotate_m,_ = cv2.Rodrigues(rvec) # world to cam; x_cm = R * x_w + t; x_pixel = Kmat * x_cm
         yaw,pitch,roll = rotationMatrixToEulerAngles(rotate_m)
+        # print(rotate_m)
 
         list1.append("tx {:.2f}mm, ty {:.2f}mm, tz {:.2f}mm".
               format(tvec[0][0],tvec[1][0],tvec[2][0]))
@@ -89,6 +107,11 @@ if __name__ == "__main__":
         rvec_t = cv2.Rodrigues(R_c)[0]
         tvec_t = T_c
         yaw,pitch,roll = rotationMatrixToEulerAngles(R_c)
+        T = np.zeros((4,4))
+        T[3,3] = 1
+        T[:3,:3] = R_c
+        T[:3,3] = tvec.T
+        T_list.append(copy.deepcopy(T))
         list2.append("file {} rx: {:.2f} degree, ry {:.2f} degree, rz {:.2f} degree, ".
                format(img_file,roll,pitch,yaw))
 
@@ -117,9 +140,14 @@ if __name__ == "__main__":
         cv2.line(frame,img_center,(img_w // 2, img_h // 2 + 30),(255,0,0),2)
         cv2.putText(frame,'y',(img_w // 2, img_h // 2 + 30),cv2.FONT_HERSHEY_COMPLEX,0.6,(255,0,0),1)
 
-        cv2.imwrite(os.path.join(res_fold,file_name+"_res.png"),frame)
+        # cv2.imwrite(os.path.join(res_fold,file_name+"_res.png"),frame)
 
         
 
 for a,b in zip(list2,list1):
     print(a,b)
+size = len(T_list)
+for i in range(size):
+    for j in range(size):
+        angle = calc_relative_angle(T_list[i],T_list[j])
+        print("{} 相对 {} angle = {:.2f} degree".format(file_list[i],file_list[j],angle))
