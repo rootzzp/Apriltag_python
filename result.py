@@ -33,7 +33,7 @@ def rotationMatrixToEulerAngles(R) :
         y = math.atan2(-R[2,0], sy)
         z = 0
 
-    return np.array([math.degrees(z), math.degrees(y), math.degrees(x)])
+    return np.array([math.degrees(x), math.degrees(y), math.degrees(z)])
 
 def calc_relative_angle(T1,T2):
     T = np.linalg.inv(T1) @ T2
@@ -43,11 +43,28 @@ def calc_relative_angle(T1,T2):
     rvec,_ = cv2.Rodrigues(R)
     tmp = math.sqrt(rvec[0]**2+rvec[1]**2+rvec[2]**2)
     angle = math.degrees(tmp)
-    t = T1[:3,3] - T2[:3,3]
+    R1 = T1[:3,:3]
+    R2 = T2[:3,:3]
+    # t =  (R1.T) @ (T2[:3,3] - T1[:3,3])
+    t =  (R2.T) @ (T1[:3,3] - T2[:3,3])
     # print(tmp)
     # theta = np.arccos((np.trace(R) - 1) / 2)
     # print(theta)
     return angle,R,t
+
+def rotm_to_ypr(R):
+    # 从旋转矩阵计算YPR顺序欧拉角
+    
+    # 计算 Yaw 角
+    psi = np.arctan2(R[1, 0], R[0, 0])
+    
+    # 计算 Pitch 角
+    theta = np.arctan2(-R[2, 0], np.sqrt(R[2, 1]**2 + R[2, 2]**2))
+    
+    # 计算 Roll 角
+    phi = np.arctan2(R[2, 1], R[2, 2])
+
+    return  math.degrees(theta), math.degrees(psi), math.degrees(phi)
 
 if __name__ == "__main__":
     fold = "./TY0913"
@@ -94,8 +111,8 @@ if __name__ == "__main__":
         campoint = np.array(campoint,dtype=np.float64)
 
         rate, rvec, tvec = cv2.solvePnP(opoints, campoint, Kmat, disCoeffs,cv2.SOLVEPNP_DLS)
-        rotate_m,_ = cv2.Rodrigues(rvec) # world to cam; x_cm = R * x_w + t; x_pixel = Kmat * x_cm
-        yaw,pitch,roll = rotationMatrixToEulerAngles(rotate_m)
+        rotate_m,_ = cv2.Rodrigues(rvec) # world(label) to cam; x_cm = R * x_w + t; x_pixel = Kmat * x_cm
+        pitch,yaw,roll = rotationMatrixToEulerAngles(rotate_m)
         # print(rotate_m)
 
         list1.append("tx {:.2f}mm, ty {:.2f}mm, tz {:.2f}mm".
@@ -107,14 +124,16 @@ if __name__ == "__main__":
         T_c = -R_c @ tvec
         rvec_t = cv2.Rodrigues(R_c)[0]
         tvec_t = T_c
-        yaw,pitch,roll = rotationMatrixToEulerAngles(R_c)
+        pitch,yaw,roll = rotationMatrixToEulerAngles(R_c)
         T = np.zeros((4,4))
         T[3,3] = 1
-        T[:3,:3] = R_c
+        # T[:3,:3] = R_c
+        # T[:3,3] = tvec.T
+        T[:3,:3] = rotate_m
         T[:3,3] = tvec.T
         T_list.append(copy.deepcopy(T))
         list2.append("file {} rx: {:.2f} degree, ry {:.2f} degree, rz {:.2f} degree, ".
-               format(img_file,roll,pitch,yaw))
+               format(img_file,pitch,yaw,roll))
 
         dis  =math.sqrt(tvec[0]**2 + tvec[1]**2 + tvec[2]**2)
                
@@ -156,5 +175,5 @@ for i in range(size):
 for i in range(size):
     for j in range(size):
         _,R,t = calc_relative_angle(T_list[i],T_list[j])
-        yaw,pitch,roll = rotationMatrixToEulerAngles(R)
-        print("{} 相对 {} rx: {:.2f} degree, ry {:.2f} degree, rz {:.2f} degree, tx {:.2f}mm, ty {:.2f}mm, tz {:.2f}mm".format(file_list[i],file_list[j],roll, pitch, yaw, t[0],t[1],t[2]))
+        yaw,pitch,roll = rotm_to_ypr(R)
+        print("{} 相对 {} rx: {:.2f} degree, ry {:.2f} degree, rz {:.2f} degree, tx {:.2f}mm, ty {:.2f}mm, tz {:.2f}mm".format(file_list[i],file_list[j], pitch, yaw, roll, t[0],t[1],t[2]))
