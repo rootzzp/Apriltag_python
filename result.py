@@ -124,7 +124,8 @@ if __name__ == "__main__":
         T_c = -R_c @ tvec
         rvec_t = cv2.Rodrigues(R_c)[0]
         tvec_t = T_c
-        pitch,yaw,roll = rotationMatrixToEulerAngles(R_c)
+        # pitch,yaw,roll = rotationMatrixToEulerAngles(R_c)
+        pitch,yaw,roll = rotm_to_ypr(R_c)
         T = np.zeros((4,4))
         T[3,3] = 1
         # T[:3,:3] = R_c
@@ -133,7 +134,7 @@ if __name__ == "__main__":
         T[:3,3] = tvec.T
         T_list.append(copy.deepcopy(T))
         list2.append("file {} rx: {:.2f} degree, ry {:.2f} degree, rz {:.2f} degree, ".
-               format(img_file,pitch,yaw,roll))
+               format(img_file,roll,pitch,yaw))
 
         dis  =math.sqrt(tvec[0]**2 + tvec[1]**2 + tvec[2]**2)
                
@@ -175,5 +176,5 @@ for i in range(size):
 for i in range(size):
     for j in range(size):
         _,R,t = calc_relative_angle(T_list[i],T_list[j])
-        yaw,pitch,roll = rotm_to_ypr(R)
-        print("{} 相对 {} rx: {:.2f} degree, ry {:.2f} degree, rz {:.2f} degree, tx {:.2f}mm, ty {:.2f}mm, tz {:.2f}mm".format(file_list[i],file_list[j], pitch, yaw, roll, t[0],t[1],t[2]))
+        pitch,yaw,roll = rotm_to_ypr(R)
+        print("{} 相对 {} rx: {:.2f} degree, ry {:.2f} degree, rz {:.2f} degree, tx {:.2f}mm, ty {:.2f}mm, tz {:.2f}mm".format(file_list[i],file_list[j], roll, pitch, yaw, t[0],t[1],t[2]))
