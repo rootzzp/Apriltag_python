@@ -69,8 +69,7 @@ def rotm_to_ypr(R):
 if __name__ == "__main__":
     fold = "./TY0913"
     res_fold = "./result"
-    file_list = ["-10.png","-5.png","0.png","1.png","2.png","3.png","4.png",
-                 "5.png","6.png","10.png", "15.png", "20.png", "25.png", "30.png",]
+    file_list = ["-10.png","10.png","30.png",]
     list1 = []
     list2 = []
     T_list = []
@@ -178,3 +177,45 @@ for i in range(size):
         _,R,t = calc_relative_angle(T_list[i],T_list[j])
         pitch,yaw,roll = rotm_to_ypr(R)
         print("{} 相对 {} rx: {:.2f} degree, ry {:.2f} degree, rz {:.2f} degree, tx {:.2f}mm, ty {:.2f}mm, tz {:.2f}mm".format(file_list[i],file_list[j], roll, pitch, yaw, t[0],t[1],t[2]))
+
+
+_,R1,t1 = calc_relative_angle(T_list[0],T_list[2])
+_,R2,t2 = calc_relative_angle(T_list[1],T_list[2])
+
+T1 = np.zeros((4,4))
+T1[3,3] = 1
+T1[:3,:3] = R1
+T1[:3,3] = t1
+
+T2 = np.zeros((4,4))
+T2[3,3] = 1
+T2[:3,:3] = R2
+T2[:3,3] = t2
+angle,_,_ = calc_relative_angle(T1,T2)
+print("验证1*********")
+i = 0
+j = 2
+pitch,yaw,roll = rotm_to_ypr(R1)
+print("{} 相对 {} rx: {:.2f} degree, ry {:.2f} degree, rz {:.2f} degree, tx {:.2f}mm, ty {:.2f}mm, tz {:.2f}mm".format(file_list[i],file_list[j], roll, pitch, yaw, t1[0],t1[1],t1[2]))
+i = 1
+j = 2
+pitch,yaw,roll = rotm_to_ypr(R2)
+print("{} 相对 {} rx: {:.2f} degree, ry {:.2f} degree, rz {:.2f} degree, tx {:.2f}mm, ty {:.2f}mm, tz {:.2f}mm".format(file_list[i],file_list[j], roll, pitch, yaw, t2[0],t2[1],t2[2]))
+i = 0
+j = 1
+print("那么 {} 相对 {} angle = {} degree".format(file_list[i],file_list[j],angle))
+
+print("验证2*********")
+i = 0
+j = 2
+pitch,yaw,roll = rotm_to_ypr(R1)
+print("{} 相对 {} rx: {:.2f} degree, ry {:.2f} degree, rz {:.2f} degree, tx {:.2f}mm, ty {:.2f}mm, tz {:.2f}mm".format(file_list[i],file_list[j], roll, pitch, yaw, t1[0],t1[1],t1[2]))
+print(list2[2],list1[2])
+
+R_c = T_list[2][:3,:3]
+t_c = T_list[2][:3,3]
+R = (R_c) @ (R1.T)
+t = R_c @ t1 + t_c
+pitch,yaw,roll = rotm_to_ypr(R.T)
+print("那么 file {} rx: {} degree, ry {} degree, rz {} degree, tx {}mm, ty {}mm, tz {}mm".
+               format(file_list[0],roll,pitch,yaw,t[0],t[1],t[2]))
